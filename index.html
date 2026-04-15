@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tunely >-< | Simple HTTP Deployer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #1A0F0A;
+    --bg2:       #231409;
+    --surface:   #2E1C10;
+    --surface2:  #3D2515;
+    --border:    #5C3A1E;
+    --amber:     #D4882A;
+    --amber2:    #F0A83C;
+    --cream:     #F2E0C4;
+    --cream2:    #D4B896;
+    --text:      #EDD9BE;
+    --muted:     #8C6A4A;
+    --green:     #7EC87A;
+    --mono:      'Space Mono', monospace;
+    --display:   'Playfair Display', serif;
+    --body:      'DM Sans', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.35;
+  }
+
+  /* Coffee ring decoration */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -180px;
+    right: -180px;
+    width: 500px;
+    height: 500px;
+    border-radius: 50%;
+    border: 40px solid rgba(212,136,42,0.04);
+    box-shadow: 0 0 0 20px rgba(212,136,42,0.02), 0 0 0 40px rgba(212,136,42,0.015);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* NAV */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2.5rem;
+    height: 64px;
+    background: rgba(26,15,10,0.85);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(92,58,30,0.4);
+  }
+
+  .nav-logo {
+    font-family: var(--mono);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--amber);
+    letter-spacing: -0.5px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .nav-logo span {
+    width: 8px; height: 8px;
+    background: var(--amber);
+    border-radius: 50%;
+    display: inline-block;
+    animation: blink 1.4s steps(1) infinite;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-decoration: none;
+    letter-spacing: 0.05em;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--amber); }
+
+  /* HERO */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 5rem 2rem 4rem;
+    overflow: hidden;
+    text-align: center;
+  }
+
+  .hero-bg-ring {
+    position: absolute;
+    bottom: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 700px;
+    height: 700px;
+    border-radius: 50%;
+    border: 1px solid rgba(212,136,42,0.08);
+    box-shadow:
+      inset 0 0 60px rgba(212,136,42,0.04),
+      0 0 0 60px rgba(212,136,42,0.02),
+      0 0 0 120px rgba(212,136,42,0.01);
+    pointer-events: none;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--amber);
+    background: rgba(212,136,42,0.08);
+    border: 1px solid rgba(212,136,42,0.25);
+    border-radius: 100px;
+    padding: 0.35rem 1rem;
+    margin-bottom: 2rem;
+    letter-spacing: 0.08em;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .badge::before {
+    content: '☕';
+    font-size: 0.85rem;
+  }
+
+  .hero-title {
+    font-family: var(--display);
+    font-size: clamp(3.5rem, 8vw, 7rem);
+    font-weight: 900;
+    line-height: 1;
+    color: var(--cream);
+    letter-spacing: -2px;
+    margin-bottom: 1.5rem;
+    animation: fadeUp 0.7s ease 0.1s both;
+  }
+
+  .hero-title .accent {
+    color: var(--amber);
+    font-style: italic;
+  }
+
+  .hero-sub {
+    font-family: var(--mono);
+    font-size: 0.95rem;
+    color: var(--muted);
+    margin-bottom: 3rem;
+    letter-spacing: 0.03em;
+    animation: fadeUp 0.7s ease 0.2s both;
+  }
+
+  .hero-sub em {
+    color: var(--amber2);
+    font-style: normal;
+  }
+
+  /* TERMINAL */
+  .terminal {
+    width: min(600px, 92vw);
+    background: #100A06;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 0 auto 3rem;
+    box-shadow:
+      0 40px 80px rgba(0,0,0,0.7),
+      0 0 0 1px rgba(212,136,42,0.05),
+      inset 0 1px 0 rgba(255,255,255,0.04);
+    animation: fadeUp 0.8s ease 0.3s both;
+    text-align: left;
+  }
+
+  .terminal-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot.r { background: #FF5F57; }
+  .dot.y { background: #FEBC2E; }
+  .dot.g { background: #28C840; }
+
+  .terminal-title {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-left: auto;
+    margin-right: auto;
+    transform: translateX(30px);
+  }
+
+  .terminal-body {
+    padding: 1.25rem 1.5rem;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    line-height: 2;
+  }
+
+  .t-prompt { color: var(--amber); }
+  .t-dim    { color: #5A4030; }
+  .t-ask    { color: #C9A07A; }
+  .t-ok     { color: var(--green); }
+  .t-info   { color: var(--amber2); }
+  .t-url    { color: #7DB9D6; text-decoration: underline; }
+  .t-cursor {
+    display: inline-block;
+    width: 8px; height: 1em;
+    background: var(--amber);
+    margin-left: 2px;
+    vertical-align: -2px;
+    animation: blink 1s steps(1) infinite;
+  }
+
+  .t-line { display: block; }
+
+  /* CTA BUTTONS */
+  .hero-cta {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    animation: fadeUp 0.8s ease 0.4s both;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.8rem 1.8rem;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+    border: none;
+    letter-spacing: 0.03em;
+  }
+
+  .btn-primary {
+    background: var(--amber);
+    color: #1A0F0A;
+    box-shadow: 0 4px 20px rgba(212,136,42,0.35);
+  }
+
+  .btn-primary:hover {
+    background: var(--amber2);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(212,136,42,0.5);
+  }
+
+  .btn-ghost {
+    background: rgba(255,255,255,0.04);
+    color: var(--cream2);
+    border: 1px solid var(--border);
+  }
+
+  .btn-ghost:hover {
+    background: rgba(255,255,255,0.08);
+    transform: translateY(-2px);
+    border-color: var(--amber);
+    color: var(--amber);
+  }
+
+  .btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+  /* DIVIDER */
+  .divider {
+    width: min(700px, 90vw);
+    margin: 0 auto;
+    border: none;
+    border-top: 1px solid rgba(92,58,30,0.3);
+  }
+
+  /* DOWNLOAD SECTION */
+  .section {
+    padding: 5rem 2rem;
+    position: relative;
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--amber);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+
+  .section-title {
+    font-family: var(--display);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 700;
+    color: var(--cream);
+    margin-bottom: 3rem;
+  }
+
+  .section-center {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .download-grid {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .download-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.75rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    text-decoration: none;
+    color: inherit;
+    min-width: 260px;
+  }
+
+  .download-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+    border-color: var(--amber);
+  }
+
+  .dl-icon {
+    width: 52px; height: 52px;
+    background: rgba(212,136,42,0.12);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    border: 1px solid rgba(212,136,42,0.2);
+  }
+
+  .dl-info {}
+
+  .dl-name {
+    font-family: var(--mono);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--cream);
+    margin-bottom: 0.3rem;
+  }
+
+  .dl-meta {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  .dl-arrow {
+    margin-left: auto;
+    color: var(--amber);
+    opacity: 0.6;
+    font-size: 1.3rem;
+    transition: transform 0.2s, opacity 0.2s;
+  }
+
+  .download-card:hover .dl-arrow { transform: translateY(3px); opacity: 1; }
+
+  /* WHY SECTION */
+  .why-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+  }
+
+  .why-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .why-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top left, rgba(212,136,42,0.06) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .why-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(212,136,42,0.4);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+  }
+
+  .why-icon {
+    font-size: 1.8rem;
+    margin-bottom: 1.2rem;
+    display: block;
+  }
+
+  .why-name {
+    font-family: var(--display);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--cream);
+    margin-bottom: 0.75rem;
+  }
+
+  .why-desc {
+    font-size: 0.88rem;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .why-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 1rem;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--amber);
+    text-decoration: none;
+    letter-spacing: 0.04em;
+    transition: gap 0.2s;
+  }
+
+  .why-link:hover { gap: 0.7rem; }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid rgba(92,58,30,0.3);
+    padding: 2.5rem 2rem;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  footer span { color: var(--amber); }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Scroll reveal */
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Stagger children */
+  .stagger > * { transition-delay: calc(var(--i, 0) * 100ms); }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    nav { padding: 0 1.25rem; }
+    .nav-links { display: none; }
+    .hero { padding: 4rem 1.25rem 3rem; }
+    .section { padding: 3.5rem 1.25rem; }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg2); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--amber); }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#">Tunely >-<<span></span></a>
+  <ul class="nav-links">
+    <li><a href="#download">Download</a></li>
+    <li><a href="#why">Why Tunely</a></li>
+    <li><a href="https://github.com/Bruhrbx/Tunely" target="_blank">GitHub</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg-ring"></div>
+
+  <div class="badge">v1.0 — brewed fresh</div>
+
+  <h1 class="hero-title">
+    Tunely <span class="accent">>-<</span>
+  </h1>
+
+  <p class="hero-sub">
+    A <em>simple HTTP website deployer</em> — straight from your terminal
+  </p>
+
+  <!-- Terminal Window -->
+  <div class="terminal">
+    <div class="terminal-bar">
+      <div class="dot r"></div>
+      <div class="dot y"></div>
+      <div class="dot g"></div>
+      <span class="terminal-title">Terminal</span>
+    </div>
+    <div class="terminal-body">
+      <span class="t-line"><span class="t-prompt">tunely >-<</span></span>
+      <span class="t-line"><span class="t-ask">[?] Enter HTML path :</span> <span class="t-info">c:/users/...</span></span>
+      <span class="t-line"><span class="t-ask">[⚙] Booting...</span></span>
+      <span class="t-line">&nbsp;</span>
+      <span class="t-line"><span class="t-ok">✓ Your server is online!</span></span>
+      <span class="t-line"><span class="t-dim">  •</span> <span class="t-dim">URL  :</span> <span class="t-url">https://your-id.localhost.run</span></span>
+      <span class="t-line"><span class="t-dim">  •</span> <span class="t-dim">Port :</span> <span class="t-info">8080</span></span>
+      <span class="t-line">&nbsp;</span>
+      <span class="t-line"><span class="t-prompt">$ </span><span class="t-cursor"></span></span>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="hero-cta">
+    <a href="#download" class="btn btn-primary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 15V3m0 12l-4-4m4 4l4-4"/><path d="M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/></svg>
+      Download
+    </a>
+    <a href="https://github.com/Bruhrbx/Tunely" target="_blank" class="btn btn-ghost">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844a9.59 9.59 0 012.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      GitHub
+    </a>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- DOWNLOAD SECTION -->
+<section class="section" id="download">
+  <div class="section-center">
+    <div class="reveal">
+      <p class="section-label">↓ Download</p>
+      <h2 class="section-title">Get Tunely</h2>
+    </div>
+    <div class="download-grid reveal stagger">
+      <a href="https://github.com/Bruhrbx/Tunely/releases" target="_blank" class="download-card" style="--i:0">
+        <div class="dl-icon">📦</div>
+        <div class="dl-info">
+          <div class="dl-name">Tunnely.zip</div>
+          <div class="dl-meta">V1.0 &nbsp;·&nbsp; Windows</div>
+        </div>
+        <div class="dl-arrow">↓</div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- WHY SECTION -->
+<section class="section" id="why">
+  <div class="section-center">
+    <div class="reveal">
+      <p class="section-label">✦ Features</p>
+      <h2 class="section-title">Why Tunely >-< ?</h2>
+    </div>
+    <div class="why-grid reveal stagger">
+      <div class="why-card" style="--i:0">
+        <span class="why-icon">☕</span>
+        <div class="why-name">Simple</div>
+        <p class="why-desc">One command. Point it at your HTML folder and you're live. No config files, no complexity.</p>
+      </div>
+      <div class="why-card" style="--i:1">
+        <span class="why-icon">🔓</span>
+        <div class="why-name">Open Source</div>
+        <p class="why-desc">Fully transparent and community-driven. Read every line, contribute, or fork freely.</p>
+        <a href="https://github.com/Bruhrbx/Tunely" class="why-link" target="_blank">github.com ↗</a>
+      </div>
+      <div class="why-card" style="--i:2">
+        <span class="why-icon">🎛️</span>
+        <div class="why-name">Full Control</div>
+        <p class="why-desc">Your machine, your rules. No cloud lock-in, no signups. Deploy locally and share instantly.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  Brewed with ☕ by <span>Bruhrbx</span> · Tunely >-< v1.0 · 
+  <a href="https://github.com/Bruhrbx/Tunely" style="color:var(--amber);text-decoration:none;" target="_blank">github.com/Bruhrbx/Tunely</a>
+</footer>
+
+<script>
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver(entries => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.15 });
+  reveals.forEach(el => io.observe(el));
+
+  // Terminal typewriter effect
+  const lines = document.querySelectorAll('.terminal-body .t-line');
+  lines.forEach((line, i) => {
+    line.style.opacity = '0';
+    setTimeout(() => {
+      line.style.transition = 'opacity 0.3s';
+      line.style.opacity = '1';
+    }, 600 + i * 350);
+  });
+</script>
+</body>
+</html>
