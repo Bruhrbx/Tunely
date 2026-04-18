@@ -1,0 +1,26 @@
+{
+  "name": "tunely",
+  "version": "1.0.0",
+  "description": "Free local tunnel for exposing your website to the internet",
+  "main": "cli.js",
+  "bin": {
+    "tunely": "./cli.js"
+  },
+  "scripts": {
+    "start": "node cli.js",
+    "panel": "node api-server.js",
+    "dev": "node cli.js & node api-server.js",
+    "tunely": "node tunely.js",
+    "tunely:api": "node tunely.js --api"
+  },
+  "keywords": [
+    "tunnel",
+    "localtunnel",
+    "web"
+  ],
+  "author": "Vin",
+  "license": "GNU Affero General Public License v3.0",
+  "dependencies": {
+    "localtunnel": "^2.0.2"
+  }
+}

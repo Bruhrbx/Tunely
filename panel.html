@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tunely Panel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:       #120c09;
+      --bg2:      #1a100a;
+      --bg3:      #150e09;
+      --surface:  rgba(255,245,235,0.05);
+      --surface2: rgba(255,245,235,0.08);
+      --border:   rgba(198,156,109,0.18);
+      --accent:   #c69c6d;
+      --accent2:  #8b5e3c;
+      --accent3:  #e8c49a;
+      --text:     #f5e6d8;
+      --text-dim: rgba(245,230,216,0.45);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 9999; opacity: 0.35;
+    }
+
+    /* LOGIN */
+    #loginPage {
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(ellipse at 40% 30%, #2b1d14, #120c09);
+      z-index: 100;
+      transition: opacity 0.55s ease, transform 0.55s ease;
+    }
+    #loginPage.hiding { opacity: 0; transform: scale(0.96); pointer-events: none; }
+    .login-wrap {
+      display: flex; flex-direction: column; align-items: center; gap: 28px;
+      animation: fadeUp 0.7s cubic-bezier(.22,.84,.34,1) both;
+    }
+    .login-brand { text-align: center; }
+    .login-brand .logo-icon { font-size: 48px; display: block; animation: float 3s ease-in-out infinite; }
+    .login-brand h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 26px; font-weight: 700; letter-spacing: 0.04em;
+      background: linear-gradient(135deg, var(--accent3), var(--accent));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin-top: 8px;
+    }
+    .login-brand p { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-dim); margin-top: 4px; }
+    .login-box {
+      backdrop-filter: blur(20px) saturate(1.4);
+      background: rgba(255,245,235,0.05);
+      border: 1px solid var(--border);
+      padding: 32px 28px; border-radius: 22px; width: 310px;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+    }
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 7px; }
+    .field input {
+      width: 100%; padding: 11px 15px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border); border-radius: 11px;
+      color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(198,156,109,0.12); }
+
+    /* API port field */
+    .field-api { margin-bottom: 14px; }
+    .field-api label { display: block; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 7px; }
+    .field-api input {
+      width: 100%; padding: 11px 15px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border); border-radius: 11px;
+      color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 13px; outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .field-api input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(198,156,109,0.12); }
+
+    .btn-login {
+      width: 100%; padding: 12px;
+      background: linear-gradient(135deg, #c69c6d, #8b5e3c);
+      border: none; border-radius: 11px;
+      color: white; font-family: 'DM Sans', sans-serif;
+      font-size: 14px; font-weight: 500; cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 20px rgba(139,94,60,0.4);
+    }
+    .btn-login:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(139,94,60,0.5); }
+    .btn-login:active { transform: translateY(0); }
+    .login-hint {
+      font-size: 11px; color: var(--text-dim); text-align: center; margin-top: 10px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .api-status-dot {
+      display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+      background: #febc2e; margin-right: 5px; vertical-align: middle;
+    }
+    .api-status-dot.ok { background: #28c840; }
+    .api-status-dot.err { background: #ff5f57; }
+
+    /* PANEL */
+    #panel { display: none; flex-direction: column; height: 100vh; }
+    #panel.visible { display: flex; animation: panelIn 0.45s cubic-bezier(.22,.84,.34,1) both; }
+    @keyframes panelIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+
+    /* TITLE BAR */
+    .titlebar {
+      height: 38px;
+      background: #130d08;
+      display: flex; align-items: center;
+      padding: 0 14px; gap: 10px;
+      border-bottom: 1px solid rgba(198,156,109,0.1);
+      flex-shrink: 0; user-select: none;
+    }
+    .dots { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; cursor: pointer; transition: filter 0.15s; }
+    .dot.red    { background: #ff5f57; }
+    .dot.yellow { background: #febc2e; }
+    .dot.green  { background: #28c840; }
+    .dot:hover  { filter: brightness(1.25); }
+    .titlebar-brand {
+      font-family: 'Playfair Display', serif;
+      font-size: 13px; font-weight: 600;
+      color: var(--accent); letter-spacing: 0.06em; white-space: nowrap;
+    }
+    .titlebar-clock {
+      margin-left: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px; color: var(--text-dim); letter-spacing: 0.05em;
+    }
+    .btn-logout {
+      padding: 5px 13px;
+      background: rgba(255,95,87,0.08);
+      border: 1px solid rgba(255,95,87,0.22);
+      border-radius: 8px;
+      color: #ff7f7a; font-size: 12px; font-weight: 500;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer; transition: all 0.18s; flex-shrink: 0;
+    }
+    .btn-logout:hover { background: rgba(255,95,87,0.18); color: #ff5f57; transform: translateY(-1px); }
+
+    /* TAB BAR */
+    .tabbar {
+      height: 42px; background: var(--bg3);
+      display: flex; align-items: flex-end;
+      padding: 0 8px; gap: 2px;
+      border-bottom: 1px solid rgba(198,156,109,0.14);
+      flex-shrink: 0;
+    }
+    .tab-btn {
+      position: relative; height: 34px; padding: 0 18px;
+      display: flex; align-items: center; gap: 7px;
+      background: transparent; border: none;
+      border-radius: 9px 9px 0 0;
+      color: var(--text-dim);
+      font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 400;
+      cursor: pointer; transition: background 0.2s, color 0.2s;
+      white-space: nowrap; outline: none;
+    }
+    .tab-btn:hover { background: rgba(255,245,235,0.04); color: var(--text); }
+    .tab-btn.active {
+      background: var(--bg2); color: var(--accent3); font-weight: 500;
+      box-shadow: inset 1px 0 0 rgba(198,156,109,0.18), inset -1px 0 0 rgba(198,156,109,0.18), inset 0 1px 0 rgba(198,156,109,0.28);
+    }
+    .tab-btn.active::after {
+      content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 1px;
+      background: var(--bg2);
+    }
+
+    /* CONTENT */
+    .content-area {
+      flex: 1; overflow-y: auto; padding: 24px 28px;
+      background: radial-gradient(ellipse at 55% 0%, #221508, var(--bg) 60%);
+    }
+    .content-area::-webkit-scrollbar { width: 5px; }
+    .content-area::-webkit-scrollbar-thumb { background: rgba(198,156,109,0.18); border-radius: 3px; }
+
+    /* TAB PANELS */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: tabIn 0.32s cubic-bezier(.22,.84,.34,1) both; }
+    @keyframes tabIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+
+    /* BREADCRUMB */
+    .breadcrumb {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--text-dim);
+      margin-bottom: 14px;
+    }
+    .breadcrumb .crumb { transition: color 0.15s; cursor: pointer; }
+    .breadcrumb .crumb:hover { color: var(--accent); }
+    .breadcrumb .sep { color: rgba(198,156,109,0.3); }
+    .breadcrumb .current { color: var(--accent3); font-weight: 500; cursor: default; }
+
+    /* CARD */
+    .card {
+      background: var(--surface); backdrop-filter: blur(14px);
+      border: 1px solid var(--border);
+      border-radius: 18px; padding: 22px; margin-bottom: 18px;
+      position: relative; overflow: hidden;
+    }
+    .card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(198,156,109,0.28), transparent);
+    }
+    .card-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 16px; font-weight: 500; color: var(--accent3);
+      margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+    }
+
+    /* FILE LIST */
+    .file-list { list-style: none; }
+    .file-list li {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; border-radius: 9px;
+      font-family: 'JetBrains Mono', monospace; font-size: 13px;
+      color: var(--text-dim); transition: background 0.15s, color 0.15s; cursor: default;
+    }
+    .file-list li.dir::before { content: '📁'; font-size: 13px; }
+    .file-list li:not(.dir)::before { content: '📄'; font-size: 13px; }
+    .file-list li:hover { background: var(--surface2); color: var(--text); }
+    .file-list-loading { color: var(--text-dim); font-size: 13px; padding: 10px 12px; font-style: italic; }
+
+    /* INFO CHIPS */
+    .info-chips { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+    .info-chip {
+      background: rgba(0,0,0,0.3); border: 1px solid var(--border);
+      border-radius: 10px; padding: 8px 14px;
+      font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-dim);
+    }
+    .info-chip span { color: var(--accent3); font-weight: 500; }
+
+    /* STATUS */
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 13px; border-radius: 20px;
+      font-size: 12px; font-weight: 500; letter-spacing: 0.07em; text-transform: uppercase;
+    }
+    .status-badge.on  { background: rgba(40,200,64,0.1); color: #28c840; border: 1px solid rgba(40,200,64,0.22); }
+    .status-badge.off { background: rgba(255,95,87,0.1);  color: #ff5f57; border: 1px solid rgba(255,95,87,0.22); }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: pulse 1.5s ease-in-out infinite; }
+    .status-badge.off .status-dot { animation: none; }
+    .btn-danger {
+      padding: 10px 20px;
+      background: rgba(255,95,87,0.08); border: 1px solid rgba(255,95,87,0.28);
+      border-radius: 11px; color: #ff5f57;
+      font-size: 13px; font-weight: 500; font-family: 'DM Sans', sans-serif; cursor: pointer;
+      transition: all 0.18s;
+    }
+    .btn-danger:hover { background: rgba(255,95,87,0.18); transform: translateY(-1px); }
+    .btn-danger:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* PERF chips */
+    .perf-mini { display: flex; gap: 12px; margin-bottom: 14px; }
+    .perf-chip {
+      flex: 1; background: rgba(0,0,0,0.3);
+      border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px;
+    }
+    .perf-chip-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 5px; }
+    .perf-chip-val { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 500; color: var(--accent3); }
+    .perf-chip-sub { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+    .perf-track { height: 4px; border-radius: 2px; background: rgba(255,255,255,0.06); margin-top: 7px; overflow: hidden; }
+    .perf-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--accent2), var(--accent3)); transition: width 0.8s cubic-bezier(.22,.84,.34,1); }
+    .perf-fill.danger { background: linear-gradient(90deg, #ff5f57, #ff9950); }
+
+    /* CONSOLE */
+    .console-out {
+      background: rgba(0,0,0,0.4); border: 1px solid var(--border);
+      border-radius: 11px; padding: 12px 14px;
+      height: 200px; overflow-y: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px; line-height: 1.75; color: #a0b88a; margin-bottom: 10px;
+    }
+    .console-out::-webkit-scrollbar { width: 4px; }
+    .console-out::-webkit-scrollbar-thumb { background: rgba(198,156,109,0.18); border-radius: 2px; }
+    .line-cmd { color: var(--accent); }
+    .line-sys { color: var(--text-dim); font-style: italic; }
+    .line-out { color: #a0b88a; }
+    .console-input-row { display: flex; gap: 8px; }
+    .console-input-row input {
+      flex: 1; padding: 9px 13px;
+      background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 9px;
+      color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 13px; outline: none;
+      transition: border-color 0.2s;
+    }
+    .console-input-row input:focus { border-color: var(--accent); }
+    .btn-run {
+      padding: 9px 17px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none; border-radius: 9px; color: white;
+      font-size: 13px; font-weight: 500; font-family: 'DM Sans', sans-serif;
+      cursor: pointer; transition: all 0.15s;
+      box-shadow: 0 2px 10px rgba(139,94,60,0.3);
+    }
+    .btn-run:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(139,94,60,0.4); }
+    .btn-run:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* API offline banner */
+    .api-offline-banner {
+      display: none;
+      background: rgba(255,95,87,0.08); border: 1px solid rgba(255,95,87,0.22);
+      border-radius: 11px; padding: 10px 16px; margin-bottom: 14px;
+      font-size: 12px; color: #ff7f7a; font-family: 'JetBrains Mono', monospace;
+    }
+    .api-offline-banner.show { display: block; }
+
+    /* ANIMATIONS */
+    @keyframes float  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(22px)} to{opacity:1;transform:none} }
+    @keyframes pulse  { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    @keyframes shake  {
+      0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)}
+      40%{transform:translateX(8px)} 60%{transform:translateX(-6px)} 80%{transform:translateX(4px)}
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginPage">
+  <div class="login-wrap">
+    <div class="login-brand">
+      <span class="logo-icon">☕</span>
+      <h1>Tunely Panel</h1>
+      <p>Control Interface</p>
+    </div>
+    <div class="login-box">
+      <div class="field-api">
+        <label>Panel API Port</label>
+        <input type="number" id="apiPort" value="4999" placeholder="4999" min="1" max="65535">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="password" placeholder="Enter password…" onkeydown="if(event.key==='Enter')login()">
+      </div>
+      <button class="btn-login" onclick="login()">Masuk ke Panel</button>
+      <div class="login-hint" id="loginHint">
+        <span class="api-status-dot" id="apiDot"></span>
+        <span id="apiHintText">Menghubungkan ke API…</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL -->
+<div id="panel">
+
+  <div class="titlebar">
+    <div class="dots">
+      <div class="dot red"></div>
+      <div class="dot yellow"></div>
+      <div class="dot green"></div>
+    </div>
+    <span class="titlebar-brand">☕ Tunely Panel</span>
+    <span class="titlebar-clock" id="clock">--:--:--</span>
+    <button class="btn-logout" onclick="refreshPanel()" title="Refresh">🔄 Refresh</button>
+    <button class="btn-logout" onclick="logout()">⏏ Logout</button>
+  </div>
+
+  <div class="tabbar">
+    <button class="tab-btn active" onclick="openTab('dir',this)">📁 Directory</button>
+    <button class="tab-btn" onclick="openTab('control',this)">⚙️ Control</button>
+    <button class="tab-btn" onclick="openTab('console',this)">🧠 Console</button>
+    <button class="tab-btn" onclick="openTab('network',this)">🌐 Network</button>
+  </div>
+
+  <div class="content-area">
+
+    <!-- DIRECTORY TAB -->
+    <div id="dir" class="tab-panel active">
+      <div class="breadcrumb">
+        <span class="crumb">🏠</span>
+        <span class="sep">/</span>
+        <span class="crumb" onclick="openTab('dir',document.querySelectorAll('.tab-btn')[0])">Tunely</span>
+        <span class="sep">/</span>
+        <span class="current">Directory</span>
+      </div>
+      <div class="card">
+        <div class="card-title">📁 Directory</div>
+        <div class="api-offline-banner" id="dirOffline">⚠️ Tidak dapat terhubung ke Panel API. Pastikan server berjalan.</div>
+        <ul class="file-list" id="files">
+          <li class="file-list-loading">Memuat daftar file…</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- CONTROL TAB -->
+    <div id="control" class="tab-panel">
+      <div class="card">
+        <div class="card-title">⚙️ Control Server</div>
+        <div class="api-offline-banner" id="controlOffline">⚠️ Tidak dapat terhubung ke Panel API. Pastikan server berjalan.</div>
+        <div class="info-chips" id="serverInfoChips"></div>
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+          <button class="btn-danger" id="shutdownBtn" onclick="shutdown()">🔴 Matikan Server</button>
+          <div class="status-badge on" id="serverBadge">
+            <span class="status-dot"></span>
+            <span id="serverStatus">Online</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONSOLE TAB -->
+    <div id="console" class="tab-panel">
+      <div class="perf-mini">
+        <div class="perf-chip">
+          <div class="perf-chip-label">CPU</div>
+          <div class="perf-chip-val" id="cpuVal">—</div>
+          <div class="perf-chip-sub" id="cpuSub"></div>
+          <div class="perf-track"><div class="perf-fill" id="cpuBar" style="width:0%"></div></div>
+        </div>
+        <div class="perf-chip">
+          <div class="perf-chip-label">RAM</div>
+          <div class="perf-chip-val" id="ramVal">—</div>
+          <div class="perf-chip-sub" id="ramSub"></div>
+          <div class="perf-track"><div class="perf-fill" id="ramBar" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">🧠 Console</div>
+        <div class="api-offline-banner" id="consoleOffline">⚠️ Tidak dapat terhubung ke Panel API. Pastikan server berjalan.</div>
+        <div class="console-out" id="consoleLog"></div>
+        <div class="console-input-row">
+          <input type="text" id="cmd" placeholder="$ ketik command…" onkeydown="if(event.key==='Enter')runCmd()">
+          <button class="btn-run" id="runBtn" onclick="runCmd()">Run</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- NETWORK TAB -->
+    <div id="network" class="tab-panel">
+      <div class="card">
+        <div class="card-title">🌐 Network</div>
+        <div class="api-offline-banner" id="networkOffline">⚠️ Tidak dapat terhubung ke Panel API. Pastikan server berjalan.</div>
+        <div class="info-chips" id="networkInfoChips"></div>
+        <div style="margin-top:16px;">
+          <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;letter-spacing:0.05em;text-transform:uppercase;">Network Interfaces</div>
+          <div id="networkList" style="display:flex;flex-direction:column;gap:10px;"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─── Config ───────────────────────────────────────────────────────────────────
+const PASSWORD = "admin123";
+let API_BASE = "http://127.0.0.1:4999";
+let apiOnline = false;
+let perfInterval = null;
+let logInterval = null;
+let statusInterval = null;
+
+// ─── API helpers ──────────────────────────────────────────────────────────────
+async function apiGet(path) {
+  const res = await fetch(API_BASE + path, { signal: AbortSignal.timeout(4000) });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  return res.json();
+}
+
+async function apiPost(path, body) {
+  const res = await fetch(API_BASE + path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(12000),
+  });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  return res.json();
+}
+
+// ─── API connectivity check ───────────────────────────────────────────────────
+async function checkApi() {
+  const port = document.getElementById("apiPort").value || "4999";
+  API_BASE = `http://127.0.0.1:${port}`;
+  const dot = document.getElementById("apiDot");
+  const hint = document.getElementById("apiHintText");
+  try {
+    await apiGet("/api/status");
+    dot.className = "api-status-dot ok";
+    hint.textContent = `API terhubung di port ${port} ✓`;
+    apiOnline = true;
+  } catch {
+    dot.className = "api-status-dot err";
+    hint.textContent = `API tidak ditemukan di port ${port}`;
+    apiOnline = false;
+  }
+}
+
+// Check API on port change
+document.getElementById("apiPort").addEventListener("input", () => {
+  clearTimeout(window._apiCheckTimer);
+  window._apiCheckTimer = setTimeout(checkApi, 600);
+});
+
+// Initial check
+checkApi();
+setInterval(checkApi, 5000);
+
+// ─── Login / Logout ───────────────────────────────────────────────────────────
+async function login() {
+  const port = document.getElementById("apiPort").value || "4999";
+  API_BASE = `http://127.0.0.1:${port}`;
+
+  if (document.getElementById("password").value !== PASSWORD) {
+    const box = document.querySelector(".login-box");
+    box.style.animation = "none"; box.offsetHeight;
+    box.style.animation = "shake 0.4s ease";
+    alert("Password salah!");
+    return;
+  }
+
+  // Verify API is reachable
+  try {
+    await apiGet("/api/status");
+  } catch {
+    const box = document.querySelector(".login-box");
+    box.style.animation = "none"; box.offsetHeight;
+    box.style.animation = "shake 0.4s ease";
+    alert(`Tidak dapat terhubung ke Panel API di port ${port}.\nPastikan server sudah berjalan dengan: node cli.js`);
+    return;
+  }
+
+  document.getElementById("loginPage").classList.add("hiding");
+  setTimeout(() => {
+    document.getElementById("loginPage").style.display = "none";
+    document.getElementById("panel").classList.add("visible");
+    sysLog("Tunely Panel aktif ☕ — selamat datang!");
+    initPanel();
+  }, 560);
+}
+
+function logout() {
+  stopPolling();
+  const panel = document.getElementById("panel");
+  panel.style.transition = "opacity 0.4s, transform 0.4s";
+  panel.style.opacity = "0"; panel.style.transform = "scale(0.97)";
+  setTimeout(() => {
+    panel.classList.remove("visible"); panel.style.cssText = "";
+    const lp = document.getElementById("loginPage");
+    lp.style.display = "flex"; lp.classList.remove("hiding");
+    document.getElementById("password").value = "";
+    checkApi();
+  }, 420);
+}
+
+function refreshPanel() {
+  stopPolling();
+  lastLogCount = 0;
+  sysLog("🔄 Refreshing panel...");
+  setTimeout(() => {
+    loadFiles();
+    loadStatus();
+    loadLogs();
+    updatePerf();
+    sysLog("✅ Panel refreshed!");
+  }, 300);
+  perfInterval = setInterval(updatePerf, 2000);
+  logInterval = setInterval(loadLogs, 1500);
+  statusInterval = setInterval(loadStatus, 3000);
+}
+
+// ─── Tab switching ────────────────────────────────────────────────────────────
+function openTab(id, btn) {
+  document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  if (btn) btn.classList.add("active");
+}
+
+// ─── Panel init ───────────────────────────────────────────────────────────────
+function initPanel() {
+  loadFiles();
+  loadStatus();
+  loadLogs();
+  loadNetwork();
+  updatePerf();
+
+  // Poll performance every 2s
+  perfInterval = setInterval(updatePerf, 2000);
+  // Poll logs every 1.5s
+  logInterval = setInterval(loadLogs, 1500);
+  // Poll status every 3s
+  statusInterval = setInterval(loadStatus, 3000);
+  // Poll network every 5s
+  networkInterval = setInterval(loadNetwork, 5000);
+}
+
+function stopPolling() {
+  clearInterval(perfInterval);
+  clearInterval(logInterval);
+  clearInterval(statusInterval);
+  clearInterval(networkInterval);
+}
+
+// ─── Directory ────────────────────────────────────────────────────────────────
+async function loadFiles() {
+  const ul = document.getElementById("files");
+  const banner = document.getElementById("dirOffline");
+  try {
+    const data = await apiGet("/api/files");
+    banner.classList.remove("show");
+    ul.innerHTML = "";
+    if (!data.files || data.files.length === 0) {
+      ul.innerHTML = '<li class="file-list-loading">Tidak ada file ditemukan.</li>';
+      return;
+    }
+    data.files.forEach(f => {
+      const li = document.createElement("li");
+      li.innerText = f;
+      ul.appendChild(li);
+    });
+  } catch {
+    banner.classList.add("show");
+    ul.innerHTML = '<li class="file-list-loading">Gagal memuat daftar file.</li>';
+  }
+}
+
+// ─── Control / Status ─────────────────────────────────────────────────────────
+async function loadStatus() {
+  const banner = document.getElementById("controlOffline");
+  const chips = document.getElementById("serverInfoChips");
+  try {
+    const data = await apiGet("/api/status");
+    banner.classList.remove("show");
+
+    // Update badge
+    const badge = document.getElementById("serverBadge");
+    const statusEl = document.getElementById("serverStatus");
+    badge.className = "status-badge " + (data.serverOn ? "on" : "off");
+    statusEl.innerText = data.serverOn ? "Online" : "Offline";
+
+    // Update shutdown button label
+    const btn = document.getElementById("shutdownBtn");
+    btn.textContent = data.serverOn ? "🔴 Matikan Server" : "🟢 Nyalakan Server";
+    btn.disabled = false;
+
+    // Info chips
+    chips.innerHTML = "";
+    if (data.selectedFile) addChip(chips, "File", data.selectedFile);
+    if (data.publicUrl)    addChip(chips, "URL", data.publicUrl);
+    if (data.port)         addChip(chips, "Port", String(data.port));
+    if (data.subdomain)    addChip(chips, "Domain", data.subdomain);
+  } catch {
+    banner.classList.add("show");
+    document.getElementById("shutdownBtn").disabled = true;
+  }
+}
+
+function addChip(container, label, value) {
+  const div = document.createElement("div");
+  div.className = "info-chip";
+  div.innerHTML = `${label}: <span>${value}</span>`;
+  container.appendChild(div);
+}
+
+let networkInterval = null;
+
+async function loadNetwork() {
+  const banner = document.getElementById("networkOffline");
+  const chips = document.getElementById("networkInfoChips");
+  const list = document.getElementById("networkList");
+  try {
+    const data = await apiGet("/api/network");
+    banner.classList.remove("show");
+    
+    chips.innerHTML = "";
+    addChip(chips, "Hostname", data.hostname);
+    addChip(chips, "Platform", data.platform);
+    
+    list.innerHTML = "";
+    if (data.interfaces && data.interfaces.length > 0) {
+      data.interfaces.forEach(iface => {
+        const div = document.createElement("div");
+        div.style.cssText = "background:var(--surface2);padding:12px;border-radius:9px;border:1px solid var(--border);";
+        div.innerHTML = `
+          <div style="font-weight:500;color:var(--accent3);margin-bottom:6px;">${iface.name}</div>
+          <div style="font-size:12px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;line-height:1.6;">
+            IPv4: <span style="color:var(--accent);">${iface.ipv4}</span><br>
+            IPv6: <span style="color:var(--accent);">${iface.ipv6}</span><br>
+            MAC: <span style="color:var(--text-dim);font-size:11px;">${iface.mac}</span>
+          </div>
+        `;
+        list.appendChild(div);
+      });
+    }
+  } catch {
+    banner.classList.add("show");
+    list.innerHTML = "";
+  }
+}
+
+let serverOn = true;
+async function shutdown() {
+  const btn = document.getElementById("shutdownBtn");
+  btn.disabled = true;
+  try {
+    const data = await apiPost("/api/shutdown", {});
+    serverOn = data.serverOn;
+    const badge = document.getElementById("serverBadge");
+    const statusEl = document.getElementById("serverStatus");
+    badge.className = "status-badge " + (serverOn ? "on" : "off");
+    statusEl.innerText = serverOn ? "Online" : "Offline";
+    btn.textContent = serverOn ? "🔴 Matikan Server" : "🟢 Nyalakan Server";
+    sysLog(data.message || (serverOn ? "Server dinyalakan kembali ✅" : "Server dimatikan ❌"));
+  } catch {
+    sysLog("Gagal menghubungi API ❌");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ─── Performance ──────────────────────────────────────────────────────────────
+async function updatePerf() {
+  try {
+    const data = await apiGet("/api/perf");
+    const cpu = data.cpu;
+    const ram = data.ram;
+
+    document.getElementById("cpuVal").innerText = cpu + "%";
+    document.getElementById("cpuSub").innerText = "";
+    const cb = document.getElementById("cpuBar");
+    cb.style.width = cpu + "%";
+    cb.className = "perf-fill" + (cpu > 80 ? " danger" : "");
+
+    document.getElementById("ramVal").innerText = ram.percent + "%";
+    document.getElementById("ramSub").innerText = `${ram.usedMB} / ${ram.totalMB} MB`;
+    const rb = document.getElementById("ramBar");
+    rb.style.width = ram.percent + "%";
+    rb.className = "perf-fill" + (ram.percent > 80 ? " danger" : "");
+
+    document.getElementById("consoleOffline").classList.remove("show");
+  } catch {
+    document.getElementById("consoleOffline").classList.add("show");
+  }
+}
+
+// ─── Console / Logs ───────────────────────────────────────────────────────────
+let lastLogCount = 0;
+
+async function loadLogs() {
+  try {
+    const data = await apiGet("/api/logs");
+    const logs = data.logs || [];
+    if (logs.length === lastLogCount) return; // no new logs
+    const el = document.getElementById("consoleLog");
+    // Only append new entries
+    const newLogs = logs.slice(lastLogCount);
+    newLogs.forEach(entry => {
+      const d = document.createElement("div");
+      if (entry.type === "cmd") {
+        d.className = "line-cmd";
+        d.innerText = "$ " + entry.text;
+      } else if (entry.type === "sys") {
+        d.className = "line-sys";
+        d.innerText = "[sys] " + entry.text;
+      } else {
+        d.className = "line-out";
+        d.innerText = entry.text;
+      }
+      el.appendChild(d);
+    });
+    lastLogCount = logs.length;
+    el.scrollTop = el.scrollHeight;
+  } catch {
+    // silently ignore
+  }
+}
+
+function sysLog(t) {
+  const el = document.getElementById("consoleLog");
+  const d = document.createElement("div");
+  d.className = "line-sys"; d.innerText = "[sys] " + t;
+  el.appendChild(d); el.scrollTop = el.scrollHeight;
+}
+
+async function runCmd() {
+  const input = document.getElementById("cmd");
+  const c = input.value.trim();
+  if (!c) return;
+
+  const btn = document.getElementById("runBtn");
+  btn.disabled = true;
+  input.value = "";
+
+  // Show command immediately in console
+  const el = document.getElementById("consoleLog");
+  const d = document.createElement("div");
+  d.className = "line-cmd"; d.innerText = "$ " + c;
+  el.appendChild(d); el.scrollTop = el.scrollHeight;
+
+  try {
+    const data = await apiPost("/api/cmd", { cmd: c });
+    // Output will be picked up by the log polling
+    // But also show immediately if available
+    if (data.lines && data.lines.length > 0) {
+      data.lines.forEach(line => {
+        const ld = document.createElement("div");
+        ld.className = "line-out"; ld.innerText = line;
+        el.appendChild(ld);
+      });
+      el.scrollTop = el.scrollHeight;
+    }
+  } catch {
+    const ld = document.createElement("div");
+    ld.className = "line-sys"; ld.innerText = "[sys] Gagal mengirim command ke API ❌";
+    el.appendChild(ld); el.scrollTop = el.scrollHeight;
+  } finally {
+    btn.disabled = false;
+    input.focus();
+  }
+}
+
+// ─── Clock ────────────────────────────────────────────────────────────────────
+function updateClock() {
+  const n = new Date(), p = v => String(v).padStart(2, "0");
+  document.getElementById("clock").innerText =
+    p(n.getHours()) + ":" + p(n.getMinutes()) + ":" + p(n.getSeconds());
+}
+setInterval(updateClock, 1000); updateClock();
+</script>
+</body>
+</html>

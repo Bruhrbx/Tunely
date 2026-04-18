@@ -170,7 +170,7 @@ node cli.js --port 8000
 
 ## 📝 License
 
-GNU Affero General Public License v3.0
+MIT License - Free to use and modify
 
 ## 🎁 Features
 
